@@ -1,0 +1,121 @@
+﻿
+<!DOCTYPE html>
+@{
+    Layout = null;
+}
+
+
+<html lang="en">
+<head>
+    <script src="~/Content/dt1/jquery-1.12.4.js"></script>
+    <script src="~/Content/dt1/jquery.dataTables.min.js"></script>
+    <script src="~/Content/dt1/dataTables.buttons.min.js"></script>
+    <script src="~/Content/dt1/dataTables.select.min.js"></script>
+    <script src="~/Content/dt1/dataTables.keyTable.min.js"></script>
+    <script src="~/Content/dt1/dataTables.editor.min.js"></script>
+    <link href="~/Content/dt1/bootstrap.min.css" rel="stylesheet" />
+    <link href="~/Content/dt1/editor.dataTables.min.css" rel="stylesheet" />
+    <link href="~/Content/dt1/select.dataTables.min.css" rel="stylesheet" />
+    <link href="~/Content/dt1/buttons.dataTables.min.css" rel="stylesheet" />
+</head>
+<body>
+    <h2>Datatable</h2>
+
+
+<table id="example" class="display" width="100%" cellspacing="0">
+        <thead>
+            <tr>
+                <th></th>
+                <th>First name</th>
+                <th>Last name</th>
+                <th>Position</th>
+                <th>Office</th>
+                <th width="18%">Start date</th>
+                <th>Salary</th>
+            </tr>
+        </thead>
+    </table>
+    </body></html>
+<script type="text/javascript">
+    var editor; // use a global for the submit and return data rendering in the examples
+
+    $(document).ready(function () {
+      
+        editor = new $.fn.datatables-editor.Editor({
+            ajax: "home/returnjson",
+            table: "#example",
+            fields: [{
+                label: "First name:",
+                name: "first_name"
+            }, {
+                label: "Last name:",
+                name: "last_name"
+            }, {
+                label: "Position:",
+                name: "position"
+            }, {
+                label: "Office:",
+                name: "office"
+            }, {
+                label: "Extension:",
+                name: "extn"
+            }, {
+                label: "Start date:",
+                name: "start_date",
+                type: "datetime"
+            }, {
+                label: "Salary:",
+                name: "salary"
+            }
+            ],
+            formOptions: {
+                inline: {
+                    onBlur: 'submit'
+                }
+            }
+        });
+
+        var table = $('#example').DataTable({
+            dom: "Bfrtip",
+            ajax: "/home/returnjson",
+            columns: [
+                {
+                    data: null,
+                    defaultContent: '',
+                    className: 'select-checkbox',
+                    orderable: false
+                },
+                { data: "first_name" },
+                { data: "last_name" },
+                { data: "position" },
+                { data: "office" },
+                { data: "start_date" },
+                { data: "salary", render: $.fn.dataTable.render.number(',', '.', 0, '$') }
+            ],
+            order: [1, 'asc'],
+            keys: {
+                columns: ':not(:first-child)',
+                keys: [9]
+            },
+            select: {
+                style: 'os',
+                selector: 'td:first-child'
+            },
+            buttons: [
+                { extend: "create", editor: editor },
+                { extend: "edit", editor: editor },
+                { extend: "remove", editor: editor }
+            ]
+        });
+
+        // Inline editing on click
+        $('#example').on('click', 'tbody td:not(:first-child)', function (e) {
+            editor.inline(this);
+        });
+
+        // Inline editing on tab focus
+        table.on('key-focus', function (e, datatable, cell) {
+            editor.inline(cell.index());
+        });
+    });
+</script>

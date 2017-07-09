@@ -1,0 +1,541 @@
+﻿<!DOCTYPE html>
+@{
+    Layout = null;
+}
+
+
+<html lang="en">
+<head>
+    
+    
+    <script src="~/Content/dt/jquery-1.12.4.js"></script>
+    <script src="~/Content/dt/jquery.dataTables.min.js"></script>    
+    <link href="~/Content/dt/jquery.dataTables.min.css" rel="stylesheet" />
+</head>
+<body>
+    <h2>Datatable</h2>
+    <button id="addBtn">Add</button> <span style="margin-left:20px;color:red" id="error"></span>
+    <br />
+    <table id="example" class="display" width="100%" cellspacing="0">
+        <thead>
+            <tr>
+                <th>EmpId</th>
+                <th>Name</th>
+                <th>Position</th>
+                <th>Office</th>  
+                <th>Age</th>                              
+                <th>Salary</th>
+                <th>Action</th>
+            </tr>
+        </thead> 
+        @* <tfoot>  
+             <tr>
+              <th>EmpId</th>
+                <th>Name</th>
+                <th>Position</th>
+                <th>Office</th>  
+                <th>Age</th>                              
+                <th>Salary</th>
+                
+                 </tr>     
+        </tfoot> *@      
+    </table>
+   
+
+</body>
+</html>
+<script type="text/javascript">
+   
+    $(document).ready(function () {
+        var table;
+        var EmpId = 0;
+        var previousValue;
+        var flag = true;
+        var g_row;
+        var counter = 0;
+        var Positions = [
+       "System Architect",
+       "Accountant",
+       "Junior Technical Author",
+       "Senior Javascript Developer",
+       "Integration Specialist"
+        ];
+        var Locations = [
+            "Edinburgh",
+            "Tokyo",
+            "San Francisco",
+            "New York",
+            "London",
+            "Sidney",
+            "Singapore"
+        ];
+        (function ($) {
+            $.fn.focusTextToEnd = function () {
+                this.focus();
+                var $thisVal = this.val();
+                this.val('').val($thisVal);
+                return this;
+            }
+        }(jQuery));
+        $.ajax({
+            url: "/Home/returnjson",
+            cache: false,
+            success: function (data) {
+                table = $('#example').DataTable({
+                    scrollY: "700px",
+                    scrollX: true,
+                    scrollCollapse: true,
+                    fixedColumns: false,
+                    paging: true,
+                    searching: true,
+                    ordering: true,
+                    info: true,
+                    lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+                    pageLength: 10,
+                    sPaginationType: "full_numbers",
+
+                    //This function is associated with the fnDrawCallback property for DataTable for not displaying Table if no rows are present
+                    fnDrawCallback: function (settings) {
+                        // $("#myTable").parent().toggle(settings.fnRecordsDisplay() > 0);
+                        //$("select[name='myTable_length'] option[value='10']").attr('selected',true);
+                    },
+                    "aaData": data,
+                    "aoColumns": [
+                      { "mDataProp": "EmpId", "orderable": true },
+                      { "mDataProp": "Name", "orderable": false },
+                      { "mDataProp": "Position", "orderable": true },
+                      { "mDataProp": "Office", "orderable": true },
+                      { "mDataProp": "Age", "orderable": false },
+                      { "mDataProp": "Salary", "orderable": true }
+                    ],
+                    "columnDefs": [
+                       { width: '10%', "targets": [0] },
+                       { className: "designation", "targets": [1] },
+                       { className: "position", "targets": [2] },
+                       { className: "location", "targets": [3] },
+                       { className: "age", "targets": [4] },
+                       { className: "salary", "targets": [5] },
+                       { className: "action", "targets": [6] ,
+                       "data": null,
+                       "defaultContent": "<button value='delete' >delete</button>"
+                       }
+                    ]                   
+                });                
+
+                $('#addBtn').on('click', function () {
+                    table.row.add(
+                   { "EmpId": counter, "Name": "", "Position": "", "Office": "", "Age": "", "Salary": "", "Action": "" }
+                    ).draw(false);
+
+                    counter--;
+                });
+
+                $('#example tbody').on('click', 'button', function () {
+                    if (confirm("Are you sure!")) {
+                        var data = table.row($(this).parents('tr')).data();
+                        EmpId = data["EmpId"];
+                        DeleteEmp(this);
+                    }                    
+                });
+                $('#example tbody').on('click', '.designation', function () {                    
+                    g_row = this.parentElement;
+                    flag = true;                 
+                    designationClick();
+
+                });         
+                $('#example tbody').on('click', '.position', function () {
+                    flag = true;
+                    g_row = this.parentElement;
+                    positionClick();
+                });                
+                $('#example tbody').on('click', '.location', function () {
+                    flag = true;
+                    g_row = this.parentElement;
+                    locationClick();
+                });
+                $('#example tbody').on('click', '.age', function () {
+                    g_row = this.parentElement;
+                    flag = true;
+                    ageClick();
+
+                });
+                $('#example tbody').on('click', '.salary', function () {
+                    g_row = this.parentElement;
+                    flag = true;
+                    salaryClick();
+
+                });
+
+                $('#example tbody').on("keydown", ".changeDesignation", function (e) {
+                    var keyCode = e.keyCode || e.which;
+                    if (keyCode == 9) {
+                        flag = false;
+                        g_row = $(this.parentElement).parent();
+                    }
+                    if ($(this).val().length == 0) {
+                        $("#error").html("Name should not be empty.");
+                    }
+                });
+                $('#example tbody').on("keyup", ".changeDesignation", function (e) {
+                  
+                    if ($(this).val().length == 0) {
+                        $("#error").html("Name should not be empty.");
+                    }
+                });
+                $('#example tbody').on("keydown", ".changePosition", function (e) {
+                    var keyCode = e.keyCode || e.which;
+                    if (keyCode == 9) {
+                        flag = false;
+                        g_row = $(this.parentElement).parent();
+                    }
+                });
+                $('#example tbody').on("keydown", ".changeLocation", function (e) {
+                    var keyCode = e.keyCode || e.which;
+                    if (keyCode == 9) {
+                        flag = false;
+                        g_row = $(this.parentElement).parent();
+                    }
+                });
+                $('#example tbody').on("keydown", ".changeAge", function (e) {
+                    var keyCode = e.keyCode || e.which;
+                   
+                    if (keyCode == 9) {
+                        flag = false;
+                        g_row = $(this.parentElement).parent();
+                    }                    
+                    if ($.inArray(keyCode, [46, 8, 9, 27, 13, 110]) !== -1 ||
+                        // Allow: Ctrl+A, Command+A
+                    (keyCode === 65 && (e.ctrlKey === true || e.metaKey === true)) ||
+                        // Allow: home, end, left, right, down, up
+                    (keyCode >= 35 && keyCode <= 40)) {
+                        // let it happen, don't do anything
+                        return;
+                    }
+                    // Ensure that it is a number and stop the keypress
+                    if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                        e.preventDefault();
+                    }
+                });
+                $('#example tbody').on("keydown", ".changeSalary", function (e) {
+                    var keyCode = e.keyCode || e.which;
+                    if (keyCode == 9) {
+                        flag = false;
+                        g_row = $(this.parentElement).parent();                        
+                    }
+                });
+                $('#example tbody').on("keydown", ".changeAction", function (e) {
+                    var keyCode = e.keyCode || e.which;
+                    if (keyCode == 9) {
+                        flag = false;
+                        // g_row = $(this.parentElement).parent().closest('tr').next('tr');
+                        g_row = $(this.parentElement).closest('tr').next('tr');
+                         //console.log("keydown=" + g_row.html());
+                        if (g_row.html() === undefined)
+                            flag = true;
+                    }
+                });
+
+                $('#example tbody').on("focusout", ".changeDesignation", function () {
+                    var $this = $(this);
+                    if ($($this).val().length == 0) {
+                        $("#error").html("");
+                        $(this).val(previousValue);
+                    }
+                    
+                    $this.parent("td").empty().text($this.val());
+                    $('#example').removeClass("editing");                    
+                    var obj = { EmpId: EmpId, Property: "Name", Name: $this.val() };
+                    if (previousValue == $this.val().trim()) {
+                        if (!flag)
+                        positionClick();
+                        return;
+                    }
+                    UpdateEmp(obj);
+                });               
+                $('#example tbody').on("focusout", ".changePosition", function () {
+                    var $this = $(this);
+                    if ($this.val().length == 0) {
+                        $("#error").html("");
+                        $(this).val(previousValue);
+                    }                                     
+                    $this.parent("td").empty().text($this.val());
+                    $('#example').removeClass("editing");
+                    var obj = { EmpId: EmpId, Property: "Position", Position: $this.val() };
+                    if (previousValue == $this.val().trim()) {
+                        if (!flag)
+                        locationClick();
+                        return;
+                    }
+                    UpdateEmp(obj);
+                });
+                $('#example tbody').on("focusout", ".changeLocation", function () {                    
+                    var $this = $(this);
+                    if ($this.val().length == 0) {
+                        $("#error").html("");
+                        $(this).val(previousValue);
+                    }
+                    $this.parent("td").empty().text($this.val());
+                    $('#example').removeClass("editing");
+                    var obj = { EmpId: EmpId, Property: "Location", Location: $this.val() }
+                    if (previousValue == $this.val().trim()) {
+                        if (!flag)
+                        ageClick();
+                        return;
+                    }
+                    UpdateEmp(obj);
+                });
+                $('#example tbody').on("focusout", ".changeAge", function () {
+                    var $this = $(this);
+                    if ($this.val().length == 0) {
+                        $("#error").html("");
+                        $(this).val(previousValue);
+                    }
+                    $this.parent("td").empty().text($this.val());
+                    $('#example').removeClass("editing");
+                    var obj = { EmpId: EmpId, Property: "Age", Age: $this.val() };
+                    if (previousValue == $this.val().trim()) {
+                        if (!flag)
+                        salaryClick();
+                        return;
+                    }
+                    UpdateEmp(obj);
+                });
+                $('#example tbody').on("focusout", ".changeSalary", function () {
+                    var $this = $(this);
+                    if ($this.val().length == 0) {
+                        $("#error").html("");
+                        $(this).val(previousValue);
+                    }
+                    $this.parent("td").empty().text($this.val());
+                    $('#example').removeClass("editing");
+                    var obj = { EmpId: EmpId, Property: "Salary", Salary: $this.val() };
+                    if (previousValue == $this.val().trim()) {
+                        if (!flag)
+                        deleteClick();
+                        return;
+                    }
+                    UpdateEmp(obj);
+                });
+               
+                $('#example tbody').on("focusout", ".changeAction", function () {
+                   // console.log("focusout=" + flag);
+                    $('#example').removeClass("editing");
+                         if (!flag)
+                            designationClick();
+                    
+                });
+            }
+        });
+
+        function UpdateEmp(obj) {
+            
+            $.ajax({
+                type: "POST",
+                url: "/Home/UpdateEmp",
+                data: obj,
+                dataType: "json",
+                success: function (data) {
+                    if (!flag) {
+                        if (obj.Property== "Name")
+                            positionClick();
+                        if (obj.Property == "Position")
+                            locationClick();
+                        if (obj.Property == "Location")
+                            ageClick();
+                        if (obj.Property == "Age")
+                            salaryClick();
+                        if (obj.Property == "Salary")
+                            designationClick();
+                    }
+                },
+                error: function (xhr, err) {
+                    alert("readyState: " + xhr.readyState + "\nstatus: " + xhr.status);
+                    alert("responseText: " + xhr.responseText);
+                }
+            });
+        }
+
+        function DeleteEmp($this) {
+
+            $.ajax({
+                type: "POST",
+                url: "/Home/DeleteEmpById",
+                data: { EmpId: EmpId },
+                dataType: "json",
+                success: function (data) {
+                    deleteRow($this);
+                },
+                error: function (xhr, err) {
+                    alert("readyState: " + xhr.readyState + "\nstatus: " + xhr.status);
+                    alert("responseText: " + xhr.responseText);
+                }
+            });
+        }
+
+        function deleteRow($this) {
+            table.row($($this).parents('tr')).remove().draw();
+        }
+       
+        function designationClick() {
+            var row = g_row;
+            flag = true;
+            if (!$('#example').hasClass("editing")) {
+                $('#example').addClass("editing");
+                var data = table.row(row).data();
+                EmpId=data["EmpId"];
+                var $row = $(row);
+                //console.log("designationClick=" + $row.html());
+                var thisPosition = $row.find("td:nth-child(2)");
+                var thisPositionText = thisPosition.text();
+                previousValue = thisPositionText;
+                // alert(" data=" + JSON.stringify(data) + " position=" + thisPosition.text());
+                thisPosition.empty().append($("<input />", {
+                    "id": "Designation_" + data["EmpId"],
+                    "class": "changeDesignation",
+                    "type": "text"
+                }).append(function () {
+                    var options = [];
+                    return options;
+                }));
+
+                $("#Designation_" + data["EmpId"]).val(thisPositionText);
+                $("#Designation_" + data["EmpId"]).focusTextToEnd();
+            }
+        }      
+
+        function positionClick() {
+            var row = g_row;
+            flag = true;
+            if (!$('#example').hasClass("editing")) {
+                $('#example').addClass("editing");
+                var data = table.row(row).data();
+                EmpId=data["EmpId"];
+                var $row = $(row);
+                var thisPosition = $row.find("td:nth-child(3)");
+                // alert(thisPosition.html());
+                var thisPositionText = thisPosition.text();
+                previousValue = thisPositionText;
+                thisPosition.empty().append($("<select></select>", {
+                    "id": "Position_" + data["EmpId"],
+                    "class": "changePosition"
+                }).append(function () {
+                    var options = [];
+                    $.each(Positions, function (k, v) {
+                        options.push($("<option></option>", {
+                            "text": v,
+                            "value": v
+                        }))
+                    })
+                    return options;
+                }));
+                $("#Position_" + data["EmpId"]).val(thisPositionText)
+                $("#Position_" + data["EmpId"]).focus();
+            }
+        }
+
+        function locationClick()
+        {
+            var row = g_row;
+            flag = true;
+            if (!$('#example').hasClass("editing")) {
+                $('#example').addClass("editing");
+                var data = table.row(row).data();
+                EmpId=data["EmpId"];
+                var $row = $(row);
+                var thisLocation = $row.find("td:nth-child(4)");
+                var thisLocationText = thisLocation.text();
+                previousValue = thisLocationText;
+                thisLocation.empty().append($("<select></select>", {
+                    "id": "Location_" + data["EmpId"],
+                    "class": "changeLocation"
+                }).append(function () {
+                    var options = [];
+                    $.each(Locations, function (k, v) {
+                        options.push($("<option></option>", {
+                            "text": v,
+                            "value": v
+                        }))
+                    })
+                    return options;
+                }));
+                $("#Location_" + data["EmpId"]).val(thisLocationText);
+                $("#Location_" + data["EmpId"]).focus();
+            }
+        }
+
+        function ageClick() {
+            var row = g_row;
+            flag = true;
+            if (!$('#example').hasClass("editing")) {
+                $('#example').addClass("editing");
+                var data = table.row(row).data();
+                EmpId=data["EmpId"];
+                var $row = $(row);
+                var thisPosition = $row.find("td:nth-child(5)");
+                var thisPositionText = thisPosition.text();
+                previousValue = thisPositionText;
+                thisPosition.empty().append($("<input />", {
+                    "id": "Age_" + data["EmpId"],
+                    "class": "changeAge",
+                    "type": "text"
+                }).append(function () {
+                    var options = [];
+                    return options;
+                }));
+
+                $("#Age_" + data["EmpId"]).val(thisPositionText);
+                $("#Age_" + data["EmpId"]).focusTextToEnd();
+            }
+        }
+
+        function salaryClick() {
+            var row = g_row;
+            flag = true;
+            if (!$('#example').hasClass("editing")) {
+                $('#example').addClass("editing");
+                var data = table.row(row).data();
+                EmpId=data["EmpId"];
+                var $row = $(row);
+                var thisPosition = $row.find("td:nth-child(6)");
+                var thisPositionText = thisPosition.text();
+                previousValue = thisPositionText;
+                thisPosition.empty().append($("<input />", {
+                    "id": "Salary_" + data["EmpId"],
+                    "class": "changeSalary",
+                    "type": "text"
+                }).append(function () {
+                    var options = [];
+                    return options;
+                }));
+
+                $("#Salary_" + data["EmpId"]).val(thisPositionText);
+                $("#Salary_" + data["EmpId"]).focusTextToEnd();
+            }
+        }
+
+        function deleteClick() {
+            var row = g_row;
+            flag = true;
+            if (!$('#example').hasClass("editing")) {
+                $('#example').addClass("editing");
+                var data = table.row(row).data();
+                EmpId = data["EmpId"];
+                var $row = $(row);
+                var thisPosition = $row.find("td:nth-child(7)");
+                thisPosition.addClass("changeAction");
+                //alert(thisPosition.html());
+                //thisPosition.focus();               
+            }
+        }
+    });
+</script>
+
+<style>
+    #example_filter .form-control {
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" version="1.1" id="spyglass" viewBox="0 0 22 22" height="22" width="22"><path d="m 10.011718,5.0898489 c -2.7000005,0 -4.9003915,2.2004 -4.9003915,4.9003996 0,2.6999995 2.200391,4.8983995 4.9003915,4.8983995 1.154374,0 2.204251,-0.4184 3.042969,-1.0898 l 3.207031,3.1113 0.626953,-0.6465 -3.185547,-3.0879 c 0.743242,-0.8594 1.208984,-1.964 1.208984,-3.1854995 0,-2.6999996 -2.20039,-4.9003996 -4.90039,-4.9003996 z m 0,1 c 2.2,0 3.90039,1.7004 3.90039,3.9003996 0,2.1999995 -1.70039,3.8983995 -3.90039,3.8983995 -2.2000005,0 -3.9003915,-1.6984 -3.9003915,-3.8983995 0,-2.1999996 1.700391,-3.9003996 3.9003915,-3.9003996 z" style="fill:#808080"/></svg>');
+        background-repeat: no-repeat;
+        background-color: #fff;
+        background-position: 0px 3px !important;
+        padding-left: 22px;
+    }
+</style>
